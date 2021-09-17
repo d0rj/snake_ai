@@ -109,6 +109,19 @@ def test_ai(game: Game) -> Direction:
     return game.snake.direction
 
 
+def user_input(events) -> Direction:
+    for event in events:
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_UP or event.key == ord('w'):
+                return Direction.UP
+            if event.key == pygame.K_DOWN or event.key == ord('s'):
+                return Direction.DOWN
+            if event.key == pygame.K_LEFT or event.key == ord('a'):
+                return Direction.LEFT
+            if event.key == pygame.K_RIGHT or event.key == ord('d'):
+                return Direction.RIGHT
+
+
 def main() -> None:
     fps_controller = pygame.time.Clock()
 
@@ -124,6 +137,15 @@ def main() -> None:
     score = 0
 
     while True:
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.event.post(pygame.event.Event(pygame.QUIT))
+
         game = Game(
             Map(size=(frame_size_x // 10, frame_size_y // 10)),
             difficulty,
@@ -133,30 +155,7 @@ def main() -> None:
                 body=[(p[0] // 10, p[1] // 10) for p in snake_body]
             )
         )
-        # for event in pygame.event.get():
-        #     if event.type == pygame.QUIT:
-        #         pygame.quit()
-        #         sys.exit()
-        #     # Whenever a key is pressed down
-        #     elif event.type == pygame.KEYDOWN:
-        #         if event.key == pygame.K_UP or event.key == ord('w'):
-        #             change_to = Direction.UP
-        #         if event.key == pygame.K_DOWN or event.key == ord('s'):
-        #             change_to = Direction.DOWN
-        #         if event.key == pygame.K_LEFT or event.key == ord('a'):
-        #             change_to = Direction.LEFT
-        #         if event.key == pygame.K_RIGHT or event.key == ord('d'):
-        #             change_to = Direction.RIGHT
-        #         # Esc -> Create event to quit the game
-        #         if event.key == pygame.K_ESCAPE:
-        #             pygame.event.post(pygame.event.Event(pygame.QUIT))
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    pygame.event.post(pygame.event.Event(pygame.QUIT))
+        # change_to = user_input(events) or direction
         change_to = test_ai(game)
 
         # Making sure the snake cannot move in the opposite direction instantaneously
