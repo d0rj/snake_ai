@@ -57,6 +57,39 @@ class Game:
             randrange(1, self.map.size[1])
         )
 
+    def move_snake(self):
+        if self.snake.direction == Direction.UP:
+            self.snake.position[1] -= 1
+        if self.snake.direction == Direction.DOWN:
+            self.snake.position[1] += 1
+        if self.snake.direction == Direction.LEFT:
+            self.snake.position[0] -= 1
+        if self.snake.direction == Direction.RIGHT:
+            self.snake.position[0] += 1
+
+        self.snake.body.insert(0, self.snake.position)
+        if self.snake.position[0] == self.food_pos[0] and self.snake.position[1] == self.food_pos[1]:
+            self.score += 1
+            self.spawn_food()
+        else:
+            self.snake.body.pop()
+
+    def is_snake_collides(self) -> bool:
+        if self.snake.position[0] < 0 or self.snake.position[0] > self.map.size[0] - 1:
+            return True
+        if self.snake.position[1] < 0 or self.snake.position[1] > self.map.size[1] - 1:
+            return True
+
+        for block in self.snake.body[1:]:
+            if self.snake.position[0] == block[0] and self.snake.position[1] == block[1]:
+                return True
+
+        return False
+
+    def step(self):
+        if self.is_game_over:
+            self.move_snake()
+            self.is_game_over = self.is_snake_collides()
 
 
 # Difficulty settings
