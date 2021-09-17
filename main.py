@@ -2,7 +2,7 @@
 
 import sys
 import time
-import random
+from random import randrange
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
 from enum import Enum
@@ -46,9 +46,16 @@ class Game:
     difficulty: int
     snake: Snake
     score: int = 0
+    is_game_over: bool = False
 
     def init(self):
-        self.food_pos = random.randrange(1, self.map.size[0]), random.randrange(1, self.map.size[1])
+        self.spawn_food()
+
+    def spawn_food(self):
+        self.food_pos = (
+            randrange(1, self.map.size[0]),
+            randrange(1, self.map.size[1])
+        )
 
 
 
@@ -128,7 +135,7 @@ def main() -> None:
     snake_pos = [100, 50]
     snake_body = [[100, 50], [100 - 10, 50], [100 - (2 * 10), 50]]
 
-    food_pos = [random.randrange(1, (frame_size_x // 10)) * 10, random.randrange(1, (frame_size_y // 10)) * 10]
+    food_pos = [randrange(1, (frame_size_x // 10)) * 10, randrange(1, (frame_size_y // 10)) * 10]
     food_spawn = True
 
     direction: Direction = Direction.RIGHT
@@ -182,7 +189,7 @@ def main() -> None:
 
         # Spawning food on the screen
         if not food_spawn:
-            food_pos = [random.randrange(1, (frame_size_x//10)) * 10, random.randrange(1, (frame_size_y//10)) * 10]
+            food_pos = [randrange(1, (frame_size_x//10)) * 10, randrange(1, (frame_size_y//10)) * 10]
         food_spawn = True
 
         # GFX
