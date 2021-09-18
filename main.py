@@ -8,14 +8,6 @@ from enum import Enum
 import pygame
 
 
-check_errors = pygame.init()
-if check_errors[1] > 0:
-    print(f'Had {check_errors[1]} errors when initialising game, exiting...')
-    exit(-1)
-else:
-    print('Game successfully initialised')
-
-
 COLORS: Dict[str, pygame.Color] = {
     'black': pygame.Color(0, 0, 0),
     'white': pygame.Color(255, 255, 255),
@@ -153,7 +145,43 @@ def draw_map(game: Game, window):
     pygame.display.update()
 
 
-def session(ai_func: Callable[[Game], Direction], by_keyboard: bool = False):
+def session(ai_func: Callable[[Game], Direction]):
+    difficulty = 30
+    map_size = 72, 48
+
+    game = Game(
+        Map(size=map_size),
+        difficulty,
+        Snake(
+            direction=Direction.RIGHT
+        )
+    )
+    game.init()
+
+    change_to = game.snake.direction
+
+    while True:
+        print(f'Position: {game.snake.position}')
+        change_to = ai_func(game)
+
+        if not Direction.is_opposite(change_to, game.snake.direction):
+            game.snake.direction = change_to
+
+        game.step()
+
+        if game.is_game_over:
+            print('Game is over!')
+            break
+
+
+def ui_session(ai_func: Callable[[Game], Direction], by_keyboard: bool = False):
+    check_errors = pygame.init()
+    if check_errors[1] > 0:
+        print(f'Had {check_errors[1]} errors when initialising game, exiting...')
+        exit(-1)
+    else:
+        print('Game successfully initialised')
+
     difficulty = 30
     frame_size_x = 720
     frame_size_y = 480
@@ -200,6 +228,11 @@ def session(ai_func: Callable[[Game], Direction], by_keyboard: bool = False):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run snake session')
     parser.add_argument(
+        '-n', '--no-window',
+        action='store_true',
+        help='(flag) Do not display game on the screen'
+    )
+    parser.add_argument(
         '-k', '--keyboard',
         action='store_true',
         help='(flag) Control snake by keyboard'
@@ -207,4 +240,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
-    session(test_ai, bool(args.keyboard))
+    if bool(args.no_window):
+        session(test_ai)
+    else:
+        ui_session(test_ai, bool(args.keyboard))
