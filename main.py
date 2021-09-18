@@ -92,28 +92,12 @@ class Game:
             self.is_game_over = self.is_snake_collides()
 
 
-# Difficulty settings
-# Easy      ->  10
-# Medium    ->  25
-# Hard      ->  40
-# Harder    ->  60
-# Impossible->  120
-difficulty = 25
-
-frame_size_x = 720
-frame_size_y = 480
-
 check_errors = pygame.init()
-
 if check_errors[1] > 0:
     print(f'[!] Had {check_errors[1]} errors when initialising game, exiting...')
     sys.exit(-1)
 else:
     print('[+] Game successfully initialised')
-
-
-pygame.display.set_caption('Snake AI')
-game_window = pygame.display.set_mode((frame_size_x, frame_size_y))
 
 
 count = 0
@@ -148,8 +132,22 @@ def user_input(events) -> Direction:
                 return Direction.RIGHT
 
 
+def draw_map(game: Game, window):
+    window.fill(COLORS['black'])
+    pygame.draw.rect(window, COLORS['white'], pygame.Rect(game.food_pos[0] * 10, game.food_pos[1] * 10, 10, 10))
+    for pos in game.snake.body:
+        pygame.draw.rect(window, COLORS['green'], pygame.Rect(pos[0] * 10, pos[1] * 10, 10, 10))
+
+    pygame.display.update()
+
+
 def main() -> None:
-    global frame_size_x, frame_size_y
+    difficulty = 25
+    frame_size_x = 720
+    frame_size_y = 480
+
+    pygame.display.set_caption('Snake AI')
+    game_window = pygame.display.set_mode((frame_size_x, frame_size_y))
 
     fps_controller = pygame.time.Clock()
 
@@ -181,12 +179,8 @@ def main() -> None:
 
         game.step()
 
-        game_window.fill(COLORS['black'])
-        pygame.draw.rect(game_window, COLORS['white'], pygame.Rect(game.food_pos[0] * 10, game.food_pos[1] * 10, 10, 10))
-        for pos in game.snake.body:
-            pygame.draw.rect(game_window, COLORS['green'], pygame.Rect(pos[0] * 10, pos[1] * 10, 10, 10))
+        draw_map(game, game_window)
 
-        pygame.display.update()
         fps_controller.tick(difficulty)
 
 
