@@ -8,9 +8,10 @@ from engine import Game, Direction, Snake, Map
 
 _COLORS: Dict[str, pygame.Color] = {
     'black': pygame.Color(0, 0, 0),
-    'white': pygame.Color(255, 255, 255),
+    'white': pygame.Color(230, 230, 230),
     'red': pygame.Color(255, 0, 0),
     'green': pygame.Color(0, 255, 0),
+    'dark_green': pygame.Color(0, 100, 0),
     'blue': pygame.Color(0, 0, 255),
 }
 
@@ -29,15 +30,25 @@ def _user_input(events) -> Direction:
 
 
 def _draw_map(game: Game, window):
-    window.fill(_COLORS['black'])
+    window.fill(_COLORS['white'])
     pygame.draw.rect(
         window,
-        _COLORS['white'],
+        _COLORS['red'],
         pygame.Rect(game.food_pos[0] * 10, game.food_pos[1] * 10, 10, 10)
     )
     for pos in game.snake.body:
         pygame.draw.rect(window,
             _COLORS['green'],
+            pygame.Rect(pos[0] * 10, pos[1] * 10, 10, 10)
+        )
+    pygame.draw.rect(window,
+        _COLORS['dark_green'],
+        pygame.Rect(game.snake.position[0] * 10, game.snake.position[1] * 10, 10, 10)
+    )
+    
+    for pos in game.map.cells:
+        pygame.draw.rect(window,
+            _COLORS['black'],
             pygame.Rect(pos[0] * 10, pos[1] * 10, 10, 10)
         )
 
@@ -61,7 +72,10 @@ def session(ai_func: Callable[[Game], Direction], by_keyboard: bool = False):
     fps_controller = pygame.time.Clock()
 
     game = Game(
-        Map((frame_size_x // 10, frame_size_y // 10)),
+        Map(
+            (frame_size_x // 10, frame_size_y // 10),
+            [(40, i) for i in range(5, 15)]
+        ),
         Snake()
     )
     game.init()

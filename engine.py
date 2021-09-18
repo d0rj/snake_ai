@@ -1,3 +1,4 @@
+from hashlib import new
 from random import randrange
 from dataclasses import dataclass, field
 from typing import List, Tuple
@@ -15,10 +16,15 @@ class Direction(Enum):
 @dataclass
 class Map:
     _size: Tuple[int, int]
+    _cells: List[Tuple[int, int]] = field(default_factory=list)
 
     @property
     def size(self) -> Tuple[int, int]:
         return self._size
+
+    @property
+    def cells(self) -> List[Tuple[int, int]]:
+        return self._cells
 
 
 @dataclass
@@ -53,6 +59,7 @@ class Game:
     _snake: Snake
     _score: int = 0
     _is_game_over: bool = False
+    _food_pos: Tuple[int, int] = (0, 0)
 
     @property
     def map(self) -> Map:
@@ -70,23 +77,31 @@ class Game:
     def is_game_over(self) -> bool:
         return self._is_game_over
 
+    @property
+    def food_pos(self) -> Tuple[int, int]:
+        return self._food_pos
+
     def init(self):
         self._score = 0
         self._is_game_over = False
         self._spawn_food()
 
     def _spawn_food(self):
-        self.food_pos = (
+        new_pos = (
             randrange(1, self._map.size[0]),
             randrange(1, self._map.size[1])
         )
+        if new_pos in self._snake.body or new_pos in self._map.cells:
+            self._spawn_food()
+        else:
+            self._food_pos = new_pos
 
     def _move_snake(self):
         self._snake._move_head()
         head_pos = self._snake.position
 
         self._snake.body.insert(0, head_pos)
-        if head_pos[0] == self.food_pos[0] and head_pos[1] == self.food_pos[1]:
+        if head_pos[0] == self._food_pos[0] and head_pos[1] == self._food_pos[1]:
             self._score += 1
             self._spawn_food()
         else:
@@ -103,6 +118,9 @@ class Game:
         for block in self._snake.body[1:]:
             if head_pos[0] == block[0] and head_pos[1] == block[1]:
                 return True
+
+        if head_pos in self._map.cells:
+            return True
 
         return False
 
