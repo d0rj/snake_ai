@@ -69,11 +69,9 @@ def session(ai_func: Callable[[Game], Direction]):
     map_size = 72, 48
 
     game = Game(
-        Map(size=map_size),
+        Map(map_size),
         difficulty,
-        Snake(
-            direction=Direction.RIGHT
-        )
+        Snake()
     )
     game.init()
 
@@ -112,9 +110,7 @@ def ui_session(ai_func: Callable[[Game], Direction], by_keyboard: bool = False):
     game = Game(
         Map(size=(frame_size_x // 10, frame_size_y // 10)),
         difficulty,
-        Snake(
-            direction=Direction.RIGHT
-        )
+        Snake()
     )
     game.init()
 

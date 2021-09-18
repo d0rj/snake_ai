@@ -20,7 +20,7 @@ class Map:
 
 @dataclass
 class Snake:
-    direction: Direction
+    direction: Direction = Direction.RIGHT
     position: Tuple[int, int] = (10, 5)
     body: List[Tuple[int, int]] =\
         field(default_factory=lambda: [(10, 5), (10 - 1, 5), (10 - 2, 5)])
