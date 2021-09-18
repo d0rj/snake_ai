@@ -1,13 +1,18 @@
-# Forked from https://gist.github.com/rajatdiptabiswas/bd0aaa46e975a4da5d090b801aba0611
-
 import sys
-import time
 from random import randrange
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
 from enum import Enum
 
 import pygame
+
+
+check_errors = pygame.init()
+if check_errors[1] > 0:
+    print(f'[!] Had {check_errors[1]} errors when initialising game, exiting...')
+    sys.exit(-1)
+else:
+    print('[+] Game successfully initialised')
 
 
 COLORS: Dict[str, pygame.Color] = {
@@ -90,14 +95,6 @@ class Game:
         if not self.is_game_over:
             self.move_snake()
             self.is_game_over = self.is_snake_collides()
-
-
-check_errors = pygame.init()
-if check_errors[1] > 0:
-    print(f'[!] Had {check_errors[1]} errors when initialising game, exiting...')
-    sys.exit(-1)
-else:
-    print('[+] Game successfully initialised')
 
 
 count = 0
