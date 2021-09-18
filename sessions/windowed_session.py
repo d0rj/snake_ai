@@ -8,9 +8,10 @@ from engine import Game, Direction, Snake, Map
 
 _COLORS: Dict[str, pygame.Color] = {
     'black': pygame.Color(0, 0, 0),
-    'white': pygame.Color(230, 230, 230),
-    'red': pygame.Color(255, 0, 0),
-    'green': pygame.Color(0, 255, 0),
+    'grey': pygame.Color(100, 100, 100),
+    'white': pygame.Color(255, 255, 255),
+    'red': pygame.Color(220, 0, 0),
+    'green': pygame.Color(0, 230, 0),
     'dark_green': pygame.Color(0, 100, 0),
     'blue': pygame.Color(0, 0, 255),
 }
@@ -31,6 +32,17 @@ def _user_input(events) -> Direction:
 
 def _draw_map(game: Game, window):
     window.fill(_COLORS['white'])
+
+    size = game.map.size
+    for i in range(0, size[0]):
+        pygame.draw.line(window, _COLORS['grey'], [i * 10, 0], [i * 10, size[1] * 10])
+    for i in range(0, size[1]):
+        pygame.draw.line(window, _COLORS['grey'], [0, i * 10], [size[0] * 10, i * 10])
+    pygame.draw.line(window, _COLORS['black'], [0, 0], [0, size[1] * 10], width=3)
+    pygame.draw.line(window, _COLORS['black'], [size[0] * 10, 0], [size[0] * 10, size[1] * 10], width=5)
+    pygame.draw.line(window, _COLORS['black'], [0, 0], [size[0] * 10, 0], width=2)
+    pygame.draw.line(window, _COLORS['black'], [0, size[1] * 10], [size[0] * 10, size[1] * 10], width=5)
+
     pygame.draw.rect(
         window,
         _COLORS['red'],
