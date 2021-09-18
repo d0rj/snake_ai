@@ -1,7 +1,8 @@
-import sys
+import argparse
+from sys import exit
 from random import randrange
 from dataclasses import dataclass, field
-from typing import Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple
 from enum import Enum
 
 import pygame
@@ -10,7 +11,7 @@ import pygame
 check_errors = pygame.init()
 if check_errors[1] > 0:
     print(f'[!] Had {check_errors[1]} errors when initialising game, exiting...')
-    sys.exit(-1)
+    exit(-1)
 else:
     print('[+] Game successfully initialised')
 
@@ -138,14 +139,13 @@ def draw_map(game: Game, window):
     pygame.display.update()
 
 
-def main() -> None:
+def session(ai_function: Callable[[Game], Direction], by_keyboard: bool = False):
     difficulty = 25
     frame_size_x = 720
     frame_size_y = 480
 
     pygame.display.set_caption('Snake AI')
     game_window = pygame.display.set_mode((frame_size_x, frame_size_y))
-
     fps_controller = pygame.time.Clock()
 
     game = Game(
@@ -164,22 +164,29 @@ def main() -> None:
         for event in events:
             if event.type == pygame.QUIT:
                 pygame.quit()
-                sys.exit()
+                exit()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     pygame.event.post(pygame.event.Event(pygame.QUIT))
         
-        # change_to = user_input(events) or game.snake.direction
-        change_to = test_ai(game)
+        if by_keyboard:
+            change_to = user_input(events) or game.snake.direction
+        else:
+            change_to = ai_function(game)
+
         if not Direction.is_opposite(change_to, game.snake.direction):
             game.snake.direction = change_to
 
         game.step()
 
         draw_map(game, game_window)
-
         fps_controller.tick(difficulty)
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description='Run snake session')
+    parser.add_argument('-k', '--keyboard', action='store_true', help='(flag) Control snake by keyboard')
+
+    args = parser.parse_args()
+    
+    session(test_ai, bool(args.keyboard))
