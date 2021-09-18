@@ -61,8 +61,7 @@ def session(ai_func: Callable[[Game], Direction], by_keyboard: bool = False):
     fps_controller = pygame.time.Clock()
 
     game = Game(
-        Map(size=(frame_size_x // 10, frame_size_y // 10)),
-        difficulty,
+        Map((frame_size_x // 10, frame_size_y // 10)),
         Snake()
     )
     game.init()

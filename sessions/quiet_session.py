@@ -4,12 +4,10 @@ from engine import Game, Direction, Snake, Map
 
 
 def session(ai_func: Callable[[Game], Direction], _: bool = False):
-    difficulty = 30
     map_size = 72, 48
 
     game = Game(
         Map(map_size),
-        difficulty,
         Snake()
     )
     game.init()
