@@ -16,25 +16,6 @@ COLORS: Dict[str, pygame.Color] = {
 }
 
 
-count = 0
-def test_ai(game: Game) -> Direction:
-    global count
-
-    count += 1
-    if count >= 5:
-        count = 0
-        if game.snake.direction == Direction.RIGHT:
-            return Direction.DOWN
-        if game.snake.direction == Direction.DOWN:
-            return Direction.LEFT
-        if game.snake.direction == Direction.LEFT:
-            return Direction.UP
-        if game.snake.direction == Direction.UP:
-            return Direction.RIGHT
-
-    return game.snake.direction
-
-
 def user_input(events) -> Direction:
     for event in events:
         if event.type == pygame.KEYDOWN:
@@ -64,7 +45,7 @@ def draw_map(game: Game, window):
     pygame.display.update()
 
 
-def session(ai_func: Callable[[Game], Direction]):
+def session(ai_func: Callable[[Game], Direction], _: bool = False):
     difficulty = 30
     map_size = 72, 48
 
@@ -140,6 +121,19 @@ def ui_session(ai_func: Callable[[Game], Direction], by_keyboard: bool = False):
         fps_controller.tick(difficulty)
 
 
+def import_function(module_name: str, function_name: str) -> Callable:
+    try:
+        module = __import__(module_name, fromlist=[function_name])
+        function = getattr(module, function_name)
+        return function
+    except ModuleNotFoundError:
+        print(f'No such module with name: \'{module_name}\'')
+        exit(-1)
+    except AttributeError:
+        print(f'No such function with name: \'{function_name}\'')
+        exit(-1)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run snake session')
     parser.add_argument(
@@ -152,10 +146,20 @@ if __name__ == '__main__':
         action='store_true',
         help='(flag) Control snake by keyboard'
     )
+    parser.add_argument(
+        '-m', '--module',
+        type=str, default='.snake_ai',
+        help='Module name of file, where search AI function'
+    )
+    parser.add_argument(
+        '-f', '--function',
+        type=str, default='snake_ai',
+        help='Name of AI function'
+    )
 
     args = parser.parse_args()
-    
-    if bool(args.no_window):
-        session(test_ai)
-    else:
-        ui_session(test_ai, bool(args.keyboard))
+
+    snake_ai = import_function(str(args.module), str(args.function))
+    session_func = session if bool(args.no_window) else ui_session
+
+    session_func(snake_ai, bool(args.keyboard))
