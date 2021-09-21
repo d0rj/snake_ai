@@ -6,29 +6,86 @@ from enum import Enum
 
 
 class Direction(Enum):
+    """Moving direction representation
+
+    Values
+    ------
+
+    UP, DOWN, LEFT, RIGHT
+
+    Static methods
+    --------------
+
+    is_opposite(first, second): bool
+        is that two values opposite?
+    """
     UP, DOWN, LEFT, RIGHT = 1, -1, 2, -2
 
     @staticmethod
     def is_opposite(first, second) -> bool:
+        """Is two values opposite
+
+        It will be True for arguments: (UP, DOWN), (DOWN, UP), (LEFT, RIGHT) and
+        (RIGHT, LEFT)
+
+        Args:
+            first (Direction): one object
+            second (Direction): another object
+
+        Returns:
+            bool: is opposite?
+        """
         return (first.value + second.value) == 0
 
 
 @dataclass
 class Map:
+    """Representation of map
+
+    Attributes
+    ----------
+
+    size: Tuple[int, int]
+        constant size of map (width, height) in cells
+    cells: List[Tuple[int, int]]
+        list of walls coordinates on map
+    """
     _size: Tuple[int, int]
     _cells: List[Tuple[int, int]] = field(default_factory=list)
 
     @property
     def size(self) -> Tuple[int, int]:
+        """Map size in cells
+
+        Returns:
+            Tuple[int, int]: width, height
+        """
         return self._size
 
     @property
     def cells(self) -> List[Tuple[int, int]]:
+        """Positions of walls on map
+
+        Returns:
+            List[Tuple[int, int]]: list of (x, y) coordinates of walls
+        """
         return self._cells
 
 
 @dataclass
 class Snake:
+    """Representation of snake and it's current state
+
+    Attributes
+    ----------
+
+    direction: Direction
+        snake movement direction
+    position: Tuple[int, int]
+        position of snake's head (x, y)
+    body: List[Tuple[int, int]]
+        list of coordinates of snake's body cells
+    """
     direction: Direction = Direction.RIGHT
     _position: Tuple[int, int] = (10, 5)
     _body: List[Tuple[int, int]] =\
@@ -36,10 +93,23 @@ class Snake:
 
     @property
     def position(self) -> Direction:
+        """Position of snake's head
+
+        See:
+            `engine.Direction`
+
+        Returns:
+            Direction: direction enum
+        """
         return self._position
 
     @property
     def body(self) -> List[Tuple[int, int]]:
+        """List of coordinates of snake's body
+
+        Returns:
+            List[Tuple[int, int]]: list of coordinates
+        """
         return self._body
 
     def _move_head(self):
