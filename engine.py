@@ -55,6 +55,22 @@ class Snake:
 
 @dataclass
 class Game:
+    """Representation of current game state
+
+    Attributes
+    -----------
+
+    map: Map
+        current map state
+    snake: Snake
+        current snake state
+    score: int
+        count of eaten food by snake in this game
+    is_game_over: bool
+        is game ended
+    food_pos: Tuple[int, int]
+        current position of food on map
+    """
     _map: Map
     _snake: Snake
     _score: int = 0
@@ -63,22 +79,52 @@ class Game:
 
     @property
     def map(self) -> Map:
+        """Current game map representation
+        
+        See:
+            :class:`engine.Map`
+
+        Returns:
+            Map: map object
+        """
         return self._map
 
     @property
     def snake(self) -> Snake:
+        """Current snake state
+
+        See :class:`engine.Snake`
+
+        Returns:
+            Snake: snake representation
+        """
         return self._snake
 
     @property
     def score(self) -> int:
+        """Current score (count of eaten apples by snake)
+
+        Returns:
+            int: score
+        """
         return self._score
 
     @property
     def is_game_over(self) -> bool:
+        """True if game is ended (snake eat themselves or bump into wall)
+
+        Returns:
+            bool: is game ended?
+        """
         return self._is_game_over
 
     @property
     def food_pos(self) -> Tuple[int, int]:
+        """Current position of food on map
+
+        Returns:
+            Tuple[int, int]: x and y coordinates
+        """
         return self._food_pos
 
     def init(self):
@@ -108,6 +154,11 @@ class Game:
             self._snake.body.pop()
 
     def is_snake_collides(self) -> bool:
+        """Returns `True` if snake bump into walls or themselves
+
+        Returns:
+            bool: is snake head collide any object except food
+        """
         head_pos = self._snake.position
 
         if head_pos[0] < 0 or head_pos[0] > self._map.size[0] - 1:
@@ -125,6 +176,10 @@ class Game:
         return False
 
     def step(self):
+        """Create one game step
+
+        If game is ended (`Game.is_game_over` is True) state will not change
+        """
         if not self._is_game_over:
             self._move_snake()
             self._is_game_over = self.is_snake_collides()
