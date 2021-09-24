@@ -1,4 +1,4 @@
-from hashlib import new
+from copy import deepcopy
 from random import randrange
 from dataclasses import dataclass, field
 from typing import List, Tuple
@@ -127,11 +127,18 @@ class Snake:
 class Game:
     """Representation of current game state
 
+    Important:
+    ---------
+
+    Use `init()` method to use created object right away after creation
+
     Attributes
     -----------
 
     map: Map
         current map state
+    default_snake: Snake
+        default snake state
     snake: Snake
         current snake state
     score: int
@@ -142,7 +149,8 @@ class Game:
         current position of food on map
     """
     _map: Map
-    _snake: Snake
+    _default_snake: Snake
+    _snake: Snake = Snake()
     _score: int = 0
     _is_game_over: bool = False
     _food_pos: Tuple[int, int] = (0, 0)
@@ -158,6 +166,15 @@ class Game:
             Map: map object
         """
         return self._map
+
+    @property
+    def default_snake(self) -> Snake:
+        """Default snake state on initialization
+
+        Returns:
+            Snake: default state
+        """
+        return self._default_snake
 
     @property
     def snake(self) -> Snake:
@@ -198,6 +215,7 @@ class Game:
         return self._food_pos
 
     def init(self):
+        self._snake = deepcopy(self._default_snake)
         self._score = 0
         self._is_game_over = False
         self._spawn_food()
