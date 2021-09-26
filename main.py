@@ -33,7 +33,7 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '-m', '--module',
-        type=str, default='.snake_ai',
+        type=str, default='ai.snake_ai',
         help='Module name of file, where search AI function'
     )
     parser.add_argument(
