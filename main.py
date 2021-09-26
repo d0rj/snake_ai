@@ -1,4 +1,4 @@
-import argparse
+from argparse import ArgumentParser
 from sys import exit
 from typing import Callable
 
@@ -20,7 +20,7 @@ def import_function(module_name: str, function_name: str) -> Callable:
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Run snake session')
+    parser = ArgumentParser(description='Run snake session')
     parser.add_argument(
         '-n', '--no-window',
         action='store_true',

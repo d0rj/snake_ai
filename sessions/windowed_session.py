@@ -94,8 +94,7 @@ def session(ai_func: Callable[[Game], Direction], by_keyboard: bool = False):
 
     game = Game(
         Map(
-            (frame_size_x // H, frame_size_y // H),
-            [(40, i) for i in range(5, 15)]
+            (frame_size_x // H, frame_size_y // H)
         ),
         Snake()
     )
