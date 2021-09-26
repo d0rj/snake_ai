@@ -271,3 +271,7 @@ class Game:
         if not self._is_game_over:
             self._move_snake()
             self._is_game_over = self.is_snake_collides()
+
+
+    def get_info(self) -> Tuple[List[Tuple[int, int]], Tuple[int, int], bool, int]:
+        return self._snake.body, self._food_pos, self._is_game_over, self._score
