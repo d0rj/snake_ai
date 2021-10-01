@@ -29,69 +29,70 @@ def where_snake_blocked(game: Game):
     size = game.map.size
     body = np.array(game.snake.body)
     barriers = np.array([0, 0, 0])
+
     if snake_direction == Direction.RIGHT:
         if np.logical_or(
                 pos[0] == size[0] - 1,
                 True in body[:, 0] == pos[0] + 1
-            ).any():
+                ).any():
             barriers[0] = 1
         elif np.logical_or(
                 pos[1] == 0,
                 True in body[:, 1] == pos[1] - 1
-            ).any():
+                ).any():
             barriers[1] = 1
         elif np.logical_or(
                 pos[1] == size[1] - 1,
                 True in body[:, 1] == pos[1] + 1
-            ).any():
+                ).any():
             barriers[2] = 1
     elif snake_direction == Direction.LEFT:
         if np.logical_or(
                 pos[0] == 0,
                 True in body[:, 0] == pos[0] - 1
-            ).any():
+                ).any():
             barriers[0] = 1
         elif np.logical_or(
                 pos[1] == size[1] - 1,
                 True in body[:, 1] == pos[1] + 1
-            ).any():
+                ).any():
             barriers[1] = 1
         elif np.logical_or(
                 pos[1] == 0,
                 True in body[:, 1] == pos[1] - 1
-            ).any():
+                ).any():
             barriers[2] = 1
     elif snake_direction == Direction.UP:
         if np.logical_or(
                 pos[1] == size[1] - 1,
                 True in body[:, 1] == pos[1] + 1
-            ).any():
+                ).any():
             barriers[0] = 1
         elif np.logical_or(
                 pos[0] == size[0] - 1,
                 True in body[:, 0] == pos[0] + 1
-            ).any():
+                ).any():
             barriers[1] = 1
         if np.logical_or(
                 pos[0] == 0,
                 True in body[:, 0] == pos[0] - 1
-            ).any():
+                ).any():
             barriers[2] = 1
     elif snake_direction == Direction.DOWN:
         if np.logical_or(
                 pos[1] == 0,
-                True in body[:,1] == pos[1] - 1
-            ).any():
+                True in body[:, 1] == pos[1] - 1
+                ).any():
             barriers[0] = 1
         elif np.logical_or(
                 pos[0] == 0,
                 True in body[:, 0] == pos[0] - 1
-            ).any():
+                ).any():
             barriers[1] = 1
         elif np.logical_or(
                 pos[0] == size[0] - 1,
                 True in body[:, 0] == pos[0] + 1
-            ).any():
+                ).any():
             barriers[2] = 1
 
     return barriers
@@ -144,9 +145,11 @@ class SnakeNN:
             snake_pos = self.game.snake.body
             food_pos = self.game.food_pos
             pre_score = self.game.score
+
             obstacles = where_snake_blocked(self.game)
             pre_distance = euclidean_distance(snake_pos[0], food_pos)
             angle = get_angle(snake_pos[0], food_pos)
+
             for _ in range(self.steps):
                 action, self.game.snake.direction =\
                     generate_action(self.game.snake.direction)
@@ -177,19 +180,21 @@ class SnakeNN:
                     pre_distance = distance
                     obstacles = where_snake_blocked(self.game)
                     angle = get_angle(snake_pos[0], food_pos)
-        training_data = training_data.reshape(int(len(training_data) / 6), 6)
+        training_data = training_data.reshape(len(training_data) // 6, 6)
         return training_data
 
     def train_model(self) -> keras.Sequential:
         training_data = self.get_training_data()
         X = training_data[:, [0, 1, 2, 3, 4]]
         y = to_categorical(training_data[:, 5], num_classes=3)
+
         model = keras.Sequential()
         model.add(Dense(25, activation='relu', input_dim=5))
         model.add(Dense(3, activation='softmax'))
         model.compile(optimizer='sgd', 
-              loss='categorical_crossentropy', 
-              metrics=['accuracy'])
+                loss='categorical_crossentropy', 
+                metrics=['accuracy']
+        )
         model.fit(X, y, batch_size=32, epochs=10)
         model.save(self.filename)
         return model
