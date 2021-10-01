@@ -100,27 +100,28 @@ def where_snake_blocked(game: Game):
 
 def generate_action(snake_direction: Direction):
     action = choice([-1, 0, 1])
-    #1 - right, -1 - left, 0 - forward
+    # 1 - right, -1 - left, 0 - forward
     if snake_direction == Direction.RIGHT:
         if action == 1:
-            snake_direction = Direction.DOWN
-        elif action == -1:
-            snake_direction = Direction.UP
-    elif snake_direction == Direction.LEFT:
+            return action, Direction.DOWN
+        if action == -1:
+            return action, Direction.UP
+    if snake_direction == Direction.LEFT:
         if action == 1:
-            snake_direction = Direction.UP
-        elif action == -1:
-            snake_direction = Direction.DOWN
-    elif snake_direction == Direction.UP:
+            return action, Direction.UP
+        if action == -1:
+            return action, Direction.DOWN
+    if snake_direction == Direction.UP:
         if action == 1:
-            snake_direction = Direction.RIGHT
-        elif action == -1:
-            snake_direction = Direction.LEFT
-    elif snake_direction == Direction.DOWN:
+            return action, Direction.RIGHT
+        if action == -1:
+            return action, Direction.LEFT
+    if snake_direction == Direction.DOWN:
         if action == 1:
-            snake_direction = Direction.LEFT
-        elif action == -1:
-            snake_direction = Direction.RIGHT
+            return action, Direction.LEFT
+        if action == -1:
+            return action, Direction.RIGHT
+
     return action, snake_direction
 
 
