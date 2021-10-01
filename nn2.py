@@ -1,5 +1,6 @@
 from math import atan2, pi
 from random import choice
+from typing import Tuple
 
 import numpy as np
 import keras
@@ -10,11 +11,11 @@ from engine import Game, Direction, Map, Snake
 from nn1 import change_direction
 
 
-def euclidean_distance(x: tuple, y: tuple):
+def euclidean_distance(x: Tuple[int, int], y: Tuple[int, int]):
     return np.linalg.norm(np.array(x) - np.array(y))
 
 
-def get_angle(x: tuple, y: tuple):
+def get_angle(x: Tuple[int, int], y: Tuple[int, int]):
     x = np.array(x)
     y = np.array(y)
     if np.linalg.norm(x) != 0:
