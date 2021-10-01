@@ -11,11 +11,29 @@ from engine import Game, Direction, Map, Snake
 from nn1 import change_direction
 
 
-def euclidean_distance(x: Tuple[int, int], y: Tuple[int, int]):
+def euclidean_distance(x: Tuple[int, int], y: Tuple[int, int]) -> float:
+    """Returns Euclidean distance between two dots
+
+    Args:
+        x (Tuple[int, int]): first position
+        y (Tuple[int, int]): second position
+
+    Returns:
+        float: distance in cells
+    """
     return np.linalg.norm(np.array(x) - np.array(y))
 
 
-def get_angle(x: Tuple[int, int], y: Tuple[int, int]):
+def get_angle(x: Tuple[int, int], y: Tuple[int, int]) -> float:
+    """Returns angle between two dots
+
+    Args:
+        x (Tuple[int, int]): first position
+        y (Tuple[int, int]): second position
+
+    Returns:
+        float: angle in radians
+    """
     x = np.array(x)
     y = np.array(y)
     if np.linalg.norm(x) != 0:
@@ -24,7 +42,15 @@ def get_angle(x: Tuple[int, int], y: Tuple[int, int]):
     return atan2(x[0] * y[1] - x[1] * y[0], x[0] * y[0] + x[1] * y[1]) / pi
 
 
-def where_snake_blocked(game: Game):
+def where_snake_blocked(game: Game) -> np.array:
+    """Returns relative position of blocking cells
+
+    Args:
+        game (Game): current game
+
+    Returns:
+        np.array: array of 3 relative positions (right, left and forward)
+    """
     snake_direction = game.snake.direction
     pos = game.snake.position
     size = game.map.size
@@ -99,7 +125,15 @@ def where_snake_blocked(game: Game):
     return barriers
 
 
-def generate_action(snake_direction: Direction):
+def generate_action(snake_direction: Direction) -> Tuple[int, Direction]:
+    """Returns random action for snake
+
+    Args:
+        snake_direction (Direction): current direction of snake
+
+    Returns:
+        Tuple[int, Direction]: action and new direction to move
+    """
     action = choice([-1, 0, 1])
     # 1 - right, -1 - left, 0 - forward
     if snake_direction == Direction.RIGHT:
