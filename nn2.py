@@ -203,7 +203,7 @@ class SnakeNN:
             steps = 0
             self.game.init()
             snake_pos, food_pos, _, score = self.game.get_info()
-            angle = get_angle(snake_pos[0],food_pos)
+            angle = get_angle(snake_pos[0], food_pos)
             prev_observation = where_snake_blocked(self.game)
 
             for _ in range(self.steps):
