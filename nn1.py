@@ -1,5 +1,3 @@
-# By https://github.com/fanaev
-
 from engine import Direction, Game, Snake, Map
 from random import choice
 import numpy as np
