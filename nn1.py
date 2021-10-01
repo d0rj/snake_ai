@@ -8,7 +8,17 @@ import keras
 from keras.layers import Dense
 
 
-def change_direction(snake_direction: Direction, key: int):
+def change_direction(snake_direction: Direction, key: int) -> Direction:
+    """Returns new direction based on relative direction and current movement
+
+    Args:
+        snake_direction (Direction): current direction of snake
+        key (int): relative direction of snake
+        (1 - right, -1 - left and 0 - forward)
+
+    Returns:
+        Direction: new direction
+    """
     if key == 1:
         if snake_direction == Direction.RIGHT:
             return Direction.DOWN
@@ -30,7 +40,15 @@ def change_direction(snake_direction: Direction, key: int):
     return snake_direction
 
 
-def generate_observation(game: Game):
+def generate_observation(game: Game) -> np.array:
+    """Returns observations for snake
+
+    Args:
+        game (Game): current game state
+
+    Returns:
+        np.array: generated barriers
+    """
     snake_direction = game.snake.direction
     pos = game.snake.position
     size = game.map.size
