@@ -1,275 +1,188 @@
-from math import atan2, pi
-from random import choice
-from typing import Tuple
-
+from engine import Snake, Game, Direction, Map
+from random import randint
 import numpy as np
-import keras
-from keras.layers import Dense
-from tensorflow.keras.utils import to_categorical
-
-from engine import Game, Direction, Map, Snake
-from nn1 import change_direction
-
-
-def euclidean_distance(x: Tuple[int, int], y: Tuple[int, int]) -> float:
-    """Returns Euclidean distance between two dots
-
-    Args:
-        x (Tuple[int, int]): first position
-        y (Tuple[int, int]): second position
-
-    Returns:
-        float: distance in cells
-    """
-    return np.linalg.norm(np.array(x) - np.array(y))
-
-
-def get_angle(x: Tuple[int, int], y: Tuple[int, int]) -> float:
-    """Returns angle between two dots
-
-    Args:
-        x (Tuple[int, int]): first position
-        y (Tuple[int, int]): second position
-
-    Returns:
-        float: angle in radians
-    """
-    x = np.array(x)
-    y = np.array(y)
-    if np.linalg.norm(x) != 0:
-        x = x / np.linalg.norm(x)
-    y = y / np.linalg.norm(y)
-    return atan2(x[0] * y[1] - x[1] * y[0], x[0] * y[0] + x[1] * y[1]) / pi
-
-
-def where_snake_blocked(game: Game) -> np.array:
-    """Returns relative position of blocking cells
-
-    Args:
-        game (Game): current game
-
-    Returns:
-        np.array: array of 3 relative positions (right, left and forward)
-    """
-    snake_direction = game.snake.direction
-    pos = game.snake.position
-    size = game.map.size
-    body = np.array(game.snake.body)
-    barriers = np.array([0, 0, 0])
-
-    if snake_direction == Direction.RIGHT:
-        if np.logical_or(
-                pos[0] == size[0] - 1,
-                True in body[:, 0] == pos[0] + 1
-                ).any():
-            barriers[0] = 1
-        elif np.logical_or(
-                pos[1] == 0,
-                True in body[:, 1] == pos[1] - 1
-                ).any():
-            barriers[1] = 1
-        elif np.logical_or(
-                pos[1] == size[1] - 1,
-                True in body[:, 1] == pos[1] + 1
-                ).any():
-            barriers[2] = 1
-    elif snake_direction == Direction.LEFT:
-        if np.logical_or(
-                pos[0] == 0,
-                True in body[:, 0] == pos[0] - 1
-                ).any():
-            barriers[0] = 1
-        elif np.logical_or(
-                pos[1] == size[1] - 1,
-                True in body[:, 1] == pos[1] + 1
-                ).any():
-            barriers[1] = 1
-        elif np.logical_or(
-                pos[1] == 0,
-                True in body[:, 1] == pos[1] - 1
-                ).any():
-            barriers[2] = 1
-    elif snake_direction == Direction.UP:
-        if np.logical_or(
-                pos[1] == size[1] - 1,
-                True in body[:, 1] == pos[1] + 1
-                ).any():
-            barriers[0] = 1
-        elif np.logical_or(
-                pos[0] == size[0] - 1,
-                True in body[:, 0] == pos[0] + 1
-                ).any():
-            barriers[1] = 1
-        if np.logical_or(
-                pos[0] == 0,
-                True in body[:, 0] == pos[0] - 1
-                ).any():
-            barriers[2] = 1
-    elif snake_direction == Direction.DOWN:
-        if np.logical_or(
-                pos[1] == 0,
-                True in body[:, 1] == pos[1] - 1
-                ).any():
-            barriers[0] = 1
-        elif np.logical_or(
-                pos[0] == 0,
-                True in body[:, 0] == pos[0] - 1
-                ).any():
-            barriers[1] = 1
-        elif np.logical_or(
-                pos[0] == size[0] - 1,
-                True in body[:, 0] == pos[0] + 1
-                ).any():
-            barriers[2] = 1
-
-    return barriers
-
-
-def generate_action(snake_direction: Direction) -> Tuple[int, Direction]:
-    """Returns random action for snake
-
-    Args:
-        snake_direction (Direction): current direction of snake
-
-    Returns:
-        Tuple[int, Direction]: action and new direction to move
-    """
-    action = choice([-1, 0, 1])
-    # 1 - right, -1 - left, 0 - forward
-    if snake_direction == Direction.RIGHT:
-        if action == 1:
-            return action, Direction.DOWN
-        if action == -1:
-            return action, Direction.UP
-    if snake_direction == Direction.LEFT:
-        if action == 1:
-            return action, Direction.UP
-        if action == -1:
-            return action, Direction.DOWN
-    if snake_direction == Direction.UP:
-        if action == 1:
-            return action, Direction.RIGHT
-        if action == -1:
-            return action, Direction.LEFT
-    if snake_direction == Direction.DOWN:
-        if action == 1:
-            return action, Direction.LEFT
-        if action == -1:
-            return action, Direction.RIGHT
-
-    return action, snake_direction
-
+import tflearn
+import math
+from tflearn.layers.core import input_data, fully_connected
+from tflearn.layers.estimator import regression
+from statistics import mean, mode
+from collections import Counter
 
 class SnakeNN:
-    def __init__(self,
-            initial_games: int = 1000,
-            test_games: int = 25,
-            steps: int = 100,
-            map_size = [20, 20],
-            filename = './models/snake_model2'
-        ):
+    def __init__(self, initial_games = 2000, test_games = 100, goal_steps = 2000, lr = 1e-2, filename = 'fanaev.tflearn'):
         self.initial_games = initial_games
-        self.steps = steps
         self.test_games = test_games
-        self.game = Game(Map(map_size), Snake())
+        self.goal_steps = goal_steps
+        self.lr = lr
         self.filename = filename
+        self.game = Game(Map([20,20]), Snake())
+        self.vectors_and_keys = [  #directions and corresponding changes in the coordinate system
+                [[-1, 0], Direction.LEFT],
+                [[0, 1], Direction.DOWN],
+                [[1, 0], Direction.RIGHT],
+                [[0, -1], Direction.UP]
+                ]
 
-    def get_training_data(self) -> np.array:
-        training_data = np.array([])
+    def get_training_data(self):
+        '''
+        Generate training data 
+        
+        return: [
+            [(x_11, x_12, x_13, x_14, x_15), y_1],
+            ...
+            [(x_i1, x_i2, x_i3, x_i4, x_i5), y_i]
+        ], where x_i1, x_i2, x_i3: {0,1} (is snake blocked on the left, front, right), 
+        x_i4: float (angle between snake's head and food),
+        x_i5: {-1, 0, 1} (snake moved left,front or right)
+        y_i: {-1,0,1} (is game done and is distance lower)
+        '''
+        training_data = []
         for _ in range(self.initial_games):
             self.game.init()
-            snake_pos = self.game.snake.body
-            food_pos = self.game.food_pos
             pre_score = self.game.score
-
-            obstacles = where_snake_blocked(self.game)
-            pre_distance = euclidean_distance(snake_pos[0], food_pos)
-            angle = get_angle(snake_pos[0], food_pos)
-
-            for _ in range(self.steps):
-                action, self.game.snake.direction =\
-                    generate_action(self.game.snake.direction)
+            prev_observation = self.generate_observation() # get features (x1,x2,x3,x4)
+            prev_food_distance = self.get_food_distance() # calculate distance between snake and food
+            for _ in range(self.goal_steps):
+                action, self.game.snake.direction = self.generate_action() # do random direction where snake is moving
                 self.game.step()
-                done = self.game.is_game_over
-                score = self.game.score
-                snake_pos = self.game.snake.body
-                food_pos = self.game.food_pos
-                distance = euclidean_distance(snake_pos[0], food_pos)
+                _, _, done, score = self.game.get_info() # check is game over and get score after action
                 if done:
-                    training_data = np.append(
-                        training_data,
-                        np.append(obstacles, [angle, action, -1])
-                    )
+                    training_data.append([self.add_action_to_observation(prev_observation, action), -1]) # if game is done answer will be -1
                     break
                 else:
-                    if score > pre_score or distance < pre_distance:
-                        training_data = np.append(
-                            training_data,
-                            np.append(obstacles, [angle, action, 1])
-                        )
+                    food_distance = self.get_food_distance() # calculate distance after action
+                    if score > pre_score or food_distance < prev_food_distance: # if distance get lower and game isn't done answer will be 1
+                        training_data.append([self.add_action_to_observation(prev_observation, action), 1])
                     else:
-                        training_data = np.append(
-                            training_data,
-                            np.append(obstacles, [angle, action, 0])
-                        )
-                    pre_score = score
-                    pre_distance = distance
-                    obstacles = where_snake_blocked(self.game)
-                    angle = get_angle(snake_pos[0], food_pos)
-        training_data = training_data.reshape(len(training_data) // 6, 6)
+                        training_data.append([self.add_action_to_observation(prev_observation, action), 0]) #else 0
+                    prev_observation = self.generate_observation()
+                    prev_food_distance = food_distance
         return training_data
 
-    def train_model(self) -> keras.Sequential:
-        training_data = self.get_training_data()
-        X = training_data[:, [0, 1, 2, 3, 4]]
-        y = to_categorical(training_data[:, 5], num_classes=3)
+    def generate_action(self):
+        '''
+        randomize action
 
-        model = keras.Sequential()
-        model.add(Dense(25, activation='relu', input_dim=5))
-        model.add(Dense(3, activation='softmax'))
-        model.compile(optimizer='sgd', 
-                loss='categorical_crossentropy', 
-                metrics=['accuracy']
-        )
-        model.fit(X, y, batch_size=32, epochs=10)
+        returns: int, Direction (the action and new Direction)
+        '''
+        action = randint(0,2) - 1
+        return action, self.get_game_action(action)
+
+    def get_game_action(self, action):
+        '''
+        get new Direction depending on the action and present Direction
+
+        returns: Direction
+        '''
+        snake_direction = self.get_snake_direction_vector() 
+        new_direction = snake_direction
+        if action == -1:
+            new_direction = self.turn_vector_to_the_left(snake_direction)
+        elif action == 1:
+            new_direction = self.turn_vector_to_the_right(snake_direction)
+
+        for pair in self.vectors_and_keys:
+            if pair[0] == new_direction.tolist():
+                game_action = pair[1]
+        return game_action
+
+    def add_action_to_observation(self, observation, action):
+        return np.append([action], observation)
+
+    def generate_observation(self):
+        '''
+        check is snake blocked on all directions and get angle between snake and food
+
+        returns: array([int, int, int, float])
+        '''
+        snake = self.game.snake.body
+        snake_direction = self.get_snake_direction_vector()
+        food_direction = self.get_food_direction_vector()
+        barrier_left = self.is_direction_blocked(snake, self.turn_vector_to_the_left(snake_direction))
+        barrier_front = self.is_direction_blocked(snake, snake_direction)
+        barrier_right = self.is_direction_blocked(snake, self.turn_vector_to_the_right(snake_direction))
+        angle = self.get_angle(snake_direction, food_direction)
+        return np.array([int(barrier_left), int(barrier_front), int(barrier_right), angle])
+
+    def is_direction_blocked(self, snake, direction):
+        point = np.array(snake[0]) + np.array(direction)
+        return point.tolist() in snake[:-1] or point[0] == 0 or point[1] == 0 or point[0] == 19 or point[1] == 19    
+    def get_snake_direction_vector(self):
+        snake = self.game.snake.body
+        return np.array(snake[0]) - np.array(snake[1])
+
+    def get_food_direction_vector(self):
+        snake = self.game.snake.position
+        food = self.game.food_pos
+        return np.array(food) - np.array(snake)    
+    def turn_vector_to_the_left(self, vector):
+        return np.array([-vector[1], vector[0]])
+
+    def turn_vector_to_the_right(self, vector):
+        return np.array([vector[1], -vector[0]])
+
+    def normalize_vector(self, vector):
+        return vector / np.linalg.norm(vector)
+
+    def get_food_distance(self):
+        return np.linalg.norm(self.get_food_direction_vector())
+
+    def get_angle(self, a, b):
+        a = self.normalize_vector(a)
+        b = self.normalize_vector(b)
+        return math.atan2(a[0] * b[1] - a[1] * b[0], a[0] * b[0] + a[1] * b[1]) / math.pi
+
+    def model(self):
+        network = input_data(shape=[None, 5, 1], name='input')
+        network = fully_connected(network, 35, activation='relu')
+        network = fully_connected(network, 25, activation='relu')
+        network = fully_connected(network, 15, activation='relu')
+        network = fully_connected(network, 5, activation='relu')
+        network = fully_connected(network, 1, activation='linear')
+        network = regression(network, optimizer='adam', learning_rate=self.lr, loss='mean_square', name='target')
+        model = tflearn.DNN(network, tensorboard_dir='log')
+        return model
+
+    def train_model(self, training_data, model):
+        X = np.array([i[0] for i in training_data]).reshape(-1, 5, 1)
+        y = np.array([i[1] for i in training_data]).reshape(-1, 1)
+        model.fit(X,y, n_epoch = 5, shuffle = True, run_id = self.filename)
         model.save(self.filename)
         return model
 
-    def test_model(self) -> tuple:
-        model = self.train_model()
+    def test_model(self):
+        '''
+        calculate average steps and score of fitted snake
+        '''
+        model = self.train_model(training_data=self.get_training_data(), model = self.model())
         steps_arr = []
         scores_arr = []
-        actions = [-1, 0, 1]
         for _ in range(self.test_games):
             steps = 0
+            game_memory = []
             self.game.init()
-            snake_pos, food_pos, _, score = self.game.get_info()
-            angle = get_angle(snake_pos[0], food_pos)
-            prev_observation = where_snake_blocked(self.game)
-
-            for _ in range(self.steps):
-                features = np.array([
-                    np.append(prev_observation,[angle, -1]),
-                    np.append(prev_observation,[angle, 0]),
-                    np.append(prev_observation,[angle, 1])
-                ])
-                predictions = model.predict(features)
-                predictions = [np.argmax(i) for i in predictions]
-                action = actions[np.argmax(predictions)]
-                self.game.snake.direction =\
-                    change_direction(self.game.snake.direction, action)
+            score = self.game.score
+            prev_observation = self.generate_observation() # get features
+            for _ in range(self.goal_steps):
+                predictions = []
+                for action in range(-1, 2):
+                   predictions.append(model.predict(self.add_action_to_observation(prev_observation, action).reshape(-1, 5, 1))) # predict for different actions
+                action = np.argmax(np.array(predictions)) # take the action, which have largest prediction
+                self.game.snake.direction = self.get_game_action(action - 1) 
                 self.game.step()
-                snake_pos, food_pos, done, score = self.game.get_info()
+                _,_,done,score = self.game.get_info()
+                game_memory.append([prev_observation, action])
                 if done:
+                    print(prev_observation)
                     break
                 else:
-                    prev_observation = where_snake_blocked(self.game)
-                    angle = get_angle(snake_pos[0], food_pos)
+                    prev_observation = self.generate_observation()
                     steps += 1
-        steps_arr.append(steps)
-        scores_arr.append(score)
-        return np.mean(steps_arr), np.mean(scores_arr)
+            steps_arr.append(steps)
+            scores_arr.append(score)
+        print('Average steps:',mean(steps_arr))
+        print('Average score:',mean(scores_arr))
 
-if __name__ == '__main__':
-    nn = SnakeNN()
-    print(nn.test_model())
+
+if __name__ == "__main__":
+    SnakeNN().test_model()
