@@ -1,136 +1,188 @@
-from engine import Snake, Game, Direction, Map
+from math import atan2, pi
 from random import randint
+from statistics import mean
+from typing import List, Tuple
+
 import numpy as np
-import tflearn
-import math
+from tflearn import DNN
 from tflearn.layers.core import input_data, fully_connected
 from tflearn.layers.estimator import regression
-from statistics import mean, mode
-from collections import Counter
+
+from engine import Snake, Game, Direction, Map
+
+
+def add_action(observation: np.ndarray, action: int) -> np.ndarray:
+    """Append action feature to observation vector in right order
+
+    Args:
+        observation (np.ndarray): Snake's observation vector
+        action (int): Action to do
+
+    Returns:
+        np.ndarray: Vector with action and observation
+    """
+    return np.append([action], observation)
+
+
+def is_direction_blocked(snake: List[Tuple[int, int]], dir: np.ndarray) -> bool:
+    point = np.array(snake[0]) + np.array(dir)
+    return point.tolist() in snake[:-1] or\
+        point[0] == 0 or point[1] == 0 or point[0] == 19 or point[1] == 19
+
+
+def snake_direction_vector(snake_body: List[Tuple[int, int]]) -> np.ndarray:
+    return np.array(snake_body[0]) - np.array(snake_body[1])
+
+
+def food_direction_vector(snake_pos: tuple, food_pos: tuple) -> np.ndarray:
+    return np.array(food_pos) - np.array(snake_pos)
+
+
+def turn_to_left(vector: np.ndarray) -> np.ndarray:
+    return np.array([-vector[1], vector[0]])
+
+
+def turn_to_right(vector: np.ndarray) -> np.ndarray:
+    return np.array([vector[1], -vector[0]])
+
+
+def normalize_vector(vector: np.ndarray) -> np.ndarray:
+    return vector / np.linalg.norm(vector)
+
+
+def get_angle(a: np.ndarray, b: np.ndarray) -> float:
+    a = normalize_vector(a)
+    b = normalize_vector(b)
+    return atan2(a[0] * b[1] - a[1] * b[0], a[0] * b[0] + a[1] * b[1]) / pi
+
 
 class SnakeNN:
-    def __init__(self, initial_games = 2000, test_games = 100, goal_steps = 2000, lr = 1e-2, filename = 'fanaev.tflearn'):
+    def __init__(self,
+            initial_games: int = 2000,
+            test_games: int = 100,
+            goal_steps: int = 2000,
+            lr: float = 1e-2,
+            filename: str = 'models/fanaev.tflearn'
+        ):
         self.initial_games = initial_games
         self.test_games = test_games
         self.goal_steps = goal_steps
         self.lr = lr
         self.filename = filename
-        self.game = Game(Map([20,20]), Snake())
-        self.vectors_and_keys = [  #directions and corresponding changes in the coordinate system
-                [[-1, 0], Direction.LEFT],
-                [[0, 1], Direction.DOWN],
-                [[1, 0], Direction.RIGHT],
-                [[0, -1], Direction.UP]
-                ]
+        self.game = Game(Map([20, 20]), Snake())
+        # directions and corresponding changes in the coordinate system
+        self.vectors_and_keys = [
+            [[-1, 0], Direction.LEFT],
+            [[0, 1], Direction.DOWN],
+            [[1, 0], Direction.RIGHT],
+            [[0, -1], Direction.UP]
+        ]
 
-    def get_training_data(self):
-        '''
-        Generate training data 
+    def get_training_data(self) -> list:
+        """Generate training data 
         
-        return: [
+        Returns: [
             [(x_11, x_12, x_13, x_14, x_15), y_1],
             ...
             [(x_i1, x_i2, x_i3, x_i4, x_i5), y_i]
-        ], where x_i1, x_i2, x_i3: {0,1} (is snake blocked on the left, front, right), 
+        ], where
+        
+        x_i1, x_i2, x_i3: {0,1} (is snake blocked on the left, front, right), 
         x_i4: float (angle between snake's head and food),
         x_i5: {-1, 0, 1} (snake moved left,front or right)
         y_i: {-1,0,1} (is game done and is distance lower)
-        '''
+        """
         training_data = []
         for _ in range(self.initial_games):
             self.game.init()
             pre_score = self.game.score
-            prev_observation = self.generate_observation() # get features (x1,x2,x3,x4)
-            prev_food_distance = self.get_food_distance() # calculate distance between snake and food
+            # get features (x1, x2, x3, x4)
+            prev_observation = self.generate_observation()
+            prev_food_distance = self.get_food_distance()
+
             for _ in range(self.goal_steps):
-                action, self.game.snake.direction = self.generate_action() # do random direction where snake is moving
+                action, self.game.snake.direction = self.generate_action()
                 self.game.step()
-                _, _, done, score = self.game.get_info() # check is game over and get score after action
+                _, _, done, score = self.game.get_info()
                 if done:
-                    training_data.append([self.add_action_to_observation(prev_observation, action), -1]) # if game is done answer will be -1
+                    # if game is done answer will be -1
+                    training_data.append(
+                        [add_action(prev_observation, action), -1]
+                    )
                     break
                 else:
-                    food_distance = self.get_food_distance() # calculate distance after action
-                    if score > pre_score or food_distance < prev_food_distance: # if distance get lower and game isn't done answer will be 1
-                        training_data.append([self.add_action_to_observation(prev_observation, action), 1])
-                    else:
-                        training_data.append([self.add_action_to_observation(prev_observation, action), 0]) #else 0
+                    answer = 0
+                    food_distance = self.get_food_distance()
+                    if score > pre_score or food_distance < prev_food_distance:
+                        answer = 1
+
+                    training_data.append(
+                        [add_action(prev_observation, action), answer]
+                    )
                     prev_observation = self.generate_observation()
                     prev_food_distance = food_distance
+
         return training_data
 
-    def generate_action(self):
-        '''
-        randomize action
+    def generate_action(self) -> Tuple[int, Direction]:
+        """Randomize action
 
-        returns: int, Direction (the action and new Direction)
-        '''
-        action = randint(0,2) - 1
+        Returns:
+            int: Direction (the action and new Direction)
+        """
+        action = randint(0, 2) - 1
         return action, self.get_game_action(action)
 
-    def get_game_action(self, action):
-        '''
-        get new Direction depending on the action and present Direction
+    def get_game_action(self, action: int):
+        """Get new Direction depending on the action and present Direction
 
-        returns: Direction
-        '''
-        snake_direction = self.get_snake_direction_vector() 
+        Returns:
+            Direction: new direction
+        """
+        snake_direction = snake_direction_vector(self.game.snake.body) 
         new_direction = snake_direction
         if action == -1:
-            new_direction = self.turn_vector_to_the_left(snake_direction)
+            new_direction = turn_to_left(snake_direction)
         elif action == 1:
-            new_direction = self.turn_vector_to_the_right(snake_direction)
+            new_direction = turn_to_right(snake_direction)
 
         for pair in self.vectors_and_keys:
             if pair[0] == new_direction.tolist():
                 game_action = pair[1]
         return game_action
 
-    def add_action_to_observation(self, observation, action):
-        return np.append([action], observation)
+    def generate_observation(self) -> np.ndarray:
+        """Check is snake blocked on all directions
+        and get angle between snake and food
 
-    def generate_observation(self):
-        '''
-        check is snake blocked on all directions and get angle between snake and food
-
-        returns: array([int, int, int, float])
-        '''
+        Returns:
+            np.ndarray([int, int, int, float]): blocking flags and angle
+        """
         snake = self.game.snake.body
-        snake_direction = self.get_snake_direction_vector()
-        food_direction = self.get_food_direction_vector()
-        barrier_left = self.is_direction_blocked(snake, self.turn_vector_to_the_left(snake_direction))
-        barrier_front = self.is_direction_blocked(snake, snake_direction)
-        barrier_right = self.is_direction_blocked(snake, self.turn_vector_to_the_right(snake_direction))
-        angle = self.get_angle(snake_direction, food_direction)
-        return np.array([int(barrier_left), int(barrier_front), int(barrier_right), angle])
+        snake_direction = snake_direction_vector(snake)
+        food_direction = food_direction_vector(
+            self.game.snake.position, self.game.food_pos
+        )
 
-    def is_direction_blocked(self, snake, direction):
-        point = np.array(snake[0]) + np.array(direction)
-        return point.tolist() in snake[:-1] or point[0] == 0 or point[1] == 0 or point[0] == 19 or point[1] == 19    
-    def get_snake_direction_vector(self):
-        snake = self.game.snake.body
-        return np.array(snake[0]) - np.array(snake[1])
+        barrier_left = is_direction_blocked(snake, turn_to_left(snake_direction))
+        barrier_front = is_direction_blocked(snake, snake_direction)
+        barrier_right = is_direction_blocked(snake, turn_to_right(snake_direction))
+        angle = get_angle(snake_direction, food_direction)
 
-    def get_food_direction_vector(self):
-        snake = self.game.snake.position
-        food = self.game.food_pos
-        return np.array(food) - np.array(snake)    
-    def turn_vector_to_the_left(self, vector):
-        return np.array([-vector[1], vector[0]])
-
-    def turn_vector_to_the_right(self, vector):
-        return np.array([vector[1], -vector[0]])
-
-    def normalize_vector(self, vector):
-        return vector / np.linalg.norm(vector)
+        return np.array([
+            int(barrier_left), int(barrier_front), int(barrier_right), angle
+        ])
 
     def get_food_distance(self):
-        return np.linalg.norm(self.get_food_direction_vector())
+        """Calculate distance between snake and food
 
-    def get_angle(self, a, b):
-        a = self.normalize_vector(a)
-        b = self.normalize_vector(b)
-        return math.atan2(a[0] * b[1] - a[1] * b[0], a[0] * b[0] + a[1] * b[1]) / math.pi
+        Returns:
+            float: Distance
+        """
+        return np.linalg.norm(food_direction_vector(
+            self.game.snake.position,
+            self.game.food_pos
+        ))
 
     def model(self):
         network = input_data(shape=[None, 5, 1], name='input')
@@ -139,22 +191,29 @@ class SnakeNN:
         network = fully_connected(network, 15, activation='relu')
         network = fully_connected(network, 5, activation='relu')
         network = fully_connected(network, 1, activation='linear')
-        network = regression(network, optimizer='adam', learning_rate=self.lr, loss='mean_square', name='target')
-        model = tflearn.DNN(network, tensorboard_dir='log')
+        network = regression(
+            network,
+            optimizer='adam',
+            learning_rate=self.lr,
+            loss='mean_square',
+            name='target'
+        )
+        model = DNN(network, tensorboard_dir='log')
         return model
 
-    def train_model(self, training_data, model):
+    def train_model(self, training_data: list, model: DNN):
         X = np.array([i[0] for i in training_data]).reshape(-1, 5, 1)
         y = np.array([i[1] for i in training_data]).reshape(-1, 1)
-        model.fit(X,y, n_epoch = 5, shuffle = True, run_id = self.filename)
+        model.fit(X, y, n_epoch=5, shuffle=True, run_id=self.filename)
         model.save(self.filename)
         return model
 
     def test_model(self):
-        '''
-        calculate average steps and score of fitted snake
-        '''
-        model = self.train_model(training_data=self.get_training_data(), model = self.model())
+        """Calculate average steps and score of fitted snake
+        """
+        model = self.train_model(
+            training_data=self.get_training_data(), model=self.model()
+        )
         steps_arr = []
         scores_arr = []
         for _ in range(self.test_games):
@@ -162,13 +221,16 @@ class SnakeNN:
             game_memory = []
             self.game.init()
             score = self.game.score
-            prev_observation = self.generate_observation() # get features
+            prev_observation = self.generate_observation()
             for _ in range(self.goal_steps):
                 predictions = []
+                # predict for different actions
                 for action in range(-1, 2):
-                   predictions.append(model.predict(self.add_action_to_observation(prev_observation, action).reshape(-1, 5, 1))) # predict for different actions
-                action = np.argmax(np.array(predictions)) # take the action, which have largest prediction
-                self.game.snake.direction = self.get_game_action(action - 1) 
+                    input_ = add_action(prev_observation, action)
+                    input_ = input_.reshape(-1, 5, 1)
+                    predictions.append(model.predict(input_))
+                action = np.argmax(np.array(predictions))
+                self.game.snake.direction = self.get_game_action(action - 1)
                 self.game.step()
                 _,_,done,score = self.game.get_info()
                 game_memory.append([prev_observation, action])
@@ -180,8 +242,8 @@ class SnakeNN:
                     steps += 1
             steps_arr.append(steps)
             scores_arr.append(score)
-        print('Average steps:',mean(steps_arr))
-        print('Average score:',mean(scores_arr))
+        print('Average steps:', mean(steps_arr))
+        print('Average score:', mean(scores_arr))
 
 
 if __name__ == "__main__":
