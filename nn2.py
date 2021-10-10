@@ -83,13 +83,46 @@ def get_game_action(snake_body: List[Tuple[int, int]], action: int) -> list:
     return game_action
 
 
+def generate_action(snake_body: List[Tuple[int, int]]) -> Tuple[int, Direction]:
+    """Randomize action
+
+    Returns:
+        int: Direction (the action and new Direction)
+    """
+    action = randint(0, 2) - 1
+    return action, get_game_action(snake_body, action)
+
+
+def generate_observation(game: Game) -> np.ndarray:
+    """Check is snake blocked on all directions
+    and get angle between snake and food
+
+    Returns:
+        np.ndarray([int, int, int, float]): blocking flags and angle
+    """
+    snake = game.snake.body
+    snake_direction = snake_direction_vector(snake)
+    food_direction = food_direction_vector(
+        game.snake.position, game.food_pos
+    )
+
+    barrier_left = is_direction_blocked(snake, turn_to_left(snake_direction))
+    barrier_front = is_direction_blocked(snake, snake_direction)
+    barrier_right = is_direction_blocked(snake, turn_to_right(snake_direction))
+    angle = get_angle(snake_direction, food_direction)
+
+    return np.array([
+        int(barrier_left), int(barrier_front), int(barrier_right), angle
+    ])
+
+
 class SnakeNN:
     def __init__(self,
             initial_games: int = 2000,
             test_games: int = 100,
             goal_steps: int = 2000,
             lr: float = 1e-2,
-            filename: str = 'models/fanaev.tflearn'
+            filename: str = './models/fanaev.tflearn'
         ):
         self.initial_games = initial_games
         self.test_games = test_games
@@ -117,11 +150,11 @@ class SnakeNN:
             self.game.init()
             pre_score = self.game.score
             # get features (x1, x2, x3, x4)
-            prev_observation = self.generate_observation()
+            prev_observation = generate_observation(self.game)
             prev_food_distance = self.get_food_distance()
 
             for _ in range(self.goal_steps):
-                action, self.game.snake.direction = self.generate_action()
+                action, self.game.snake.direction = generate_action(self.game.snake.body)
                 self.game.step()
                 _, _, done, score = self.game.get_info()
                 if done:
@@ -139,41 +172,10 @@ class SnakeNN:
                     training_data.append(
                         [add_action(prev_observation, action), answer]
                     )
-                    prev_observation = self.generate_observation()
+                    prev_observation = generate_observation(self.game)
                     prev_food_distance = food_distance
 
         return training_data
-
-    def generate_action(self) -> Tuple[int, Direction]:
-        """Randomize action
-
-        Returns:
-            int: Direction (the action and new Direction)
-        """
-        action = randint(0, 2) - 1
-        return action, get_game_action(self.game.snake.body, action)
-
-    def generate_observation(self) -> np.ndarray:
-        """Check is snake blocked on all directions
-        and get angle between snake and food
-
-        Returns:
-            np.ndarray([int, int, int, float]): blocking flags and angle
-        """
-        snake = self.game.snake.body
-        snake_direction = snake_direction_vector(snake)
-        food_direction = food_direction_vector(
-            self.game.snake.position, self.game.food_pos
-        )
-
-        barrier_left = is_direction_blocked(snake, turn_to_left(snake_direction))
-        barrier_front = is_direction_blocked(snake, snake_direction)
-        barrier_right = is_direction_blocked(snake, turn_to_right(snake_direction))
-        angle = get_angle(snake_direction, food_direction)
-
-        return np.array([
-            int(barrier_left), int(barrier_front), int(barrier_right), angle
-        ])
 
     def get_food_distance(self) -> float:
         """Calculate distance between snake and food
@@ -223,7 +225,7 @@ class SnakeNN:
             game_memory = []
             self.game.init()
             score = self.game.score
-            prev_observation = self.generate_observation()
+            prev_observation = generate_observation(self.game)
             for _ in range(self.goal_steps):
                 predictions = []
                 # predict for different actions
@@ -243,7 +245,7 @@ class SnakeNN:
                     print(prev_observation)
                     break
                 else:
-                    prev_observation = self.generate_observation()
+                    prev_observation = generate_observation(self.game)
                     steps += 1
             steps_arr.append(steps)
             scores_arr.append(score)
