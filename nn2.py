@@ -56,6 +56,33 @@ def get_angle(a: np.ndarray, b: np.ndarray) -> float:
     return atan2(a[0] * b[1] - a[1] * b[0], a[0] * b[0] + a[1] * b[1]) / pi
 
 
+def get_game_action(snake_body: List[Tuple[int, int]], action: int) -> list:
+    """Get new Direction depending on the action and present Direction
+
+    Returns:
+        Direction: new direction
+    """
+    # directions and corresponding changes in the coordinate system
+    vectors_and_keys = [
+        [[-1, 0], Direction.LEFT],
+        [[0, 1], Direction.DOWN],
+        [[1, 0], Direction.RIGHT],
+        [[0, -1], Direction.UP]
+    ]
+    snake_direction = snake_direction_vector(snake_body) 
+    new_direction = snake_direction
+    if action == -1:
+        new_direction = turn_to_left(snake_direction)
+    elif action == 1:
+        new_direction = turn_to_right(snake_direction)
+
+    for pair in vectors_and_keys:
+        if pair[0] == new_direction.tolist():
+            game_action = pair[1]
+
+    return game_action
+
+
 class SnakeNN:
     def __init__(self,
             initial_games: int = 2000,
@@ -70,13 +97,6 @@ class SnakeNN:
         self.lr = lr
         self.filename = filename
         self.game = Game(Map([20, 20]), Snake())
-        # directions and corresponding changes in the coordinate system
-        self.vectors_and_keys = [
-            [[-1, 0], Direction.LEFT],
-            [[0, 1], Direction.DOWN],
-            [[1, 0], Direction.RIGHT],
-            [[0, -1], Direction.UP]
-        ]
 
     def get_training_data(self) -> list:
         """Generate training data 
@@ -131,25 +151,7 @@ class SnakeNN:
             int: Direction (the action and new Direction)
         """
         action = randint(0, 2) - 1
-        return action, self.get_game_action(action)
-
-    def get_game_action(self, action: int):
-        """Get new Direction depending on the action and present Direction
-
-        Returns:
-            Direction: new direction
-        """
-        snake_direction = snake_direction_vector(self.game.snake.body) 
-        new_direction = snake_direction
-        if action == -1:
-            new_direction = turn_to_left(snake_direction)
-        elif action == 1:
-            new_direction = turn_to_right(snake_direction)
-
-        for pair in self.vectors_and_keys:
-            if pair[0] == new_direction.tolist():
-                game_action = pair[1]
-        return game_action
+        return action, get_game_action(self.game.snake.body, action)
 
     def generate_observation(self) -> np.ndarray:
         """Check is snake blocked on all directions
@@ -173,7 +175,7 @@ class SnakeNN:
             int(barrier_left), int(barrier_front), int(barrier_right), angle
         ])
 
-    def get_food_distance(self):
+    def get_food_distance(self) -> float:
         """Calculate distance between snake and food
 
         Returns:
@@ -184,7 +186,7 @@ class SnakeNN:
             self.game.food_pos
         ))
 
-    def model(self):
+    def model(self) -> DNN:
         network = input_data(shape=[None, 5, 1], name='input')
         network = fully_connected(network, 35, activation='relu')
         network = fully_connected(network, 25, activation='relu')
@@ -230,9 +232,12 @@ class SnakeNN:
                     input_ = input_.reshape(-1, 5, 1)
                     predictions.append(model.predict(input_))
                 action = np.argmax(np.array(predictions))
-                self.game.snake.direction = self.get_game_action(action - 1)
+                self.game.snake.direction = get_game_action(
+                    self.game.snake.body,
+                    action - 1
+                )
                 self.game.step()
-                _,_,done,score = self.game.get_info()
+                _, _, done, score = self.game.get_info()
                 game_memory.append([prev_observation, action])
                 if done:
                     print(prev_observation)
