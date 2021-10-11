@@ -72,6 +72,7 @@ def _draw_map(game: Game, window):
             pygame.Rect(pos[0] * H, pos[1] * H, H, H)
         )
 
+    pygame.display.set_caption(f'Score: {game.score}')
     pygame.display.update()
 
 
