@@ -26,7 +26,7 @@ def add_action(observation: np.ndarray, action: int) -> np.ndarray:
 
 def is_direction_blocked(snake: List[Tuple[int, int]], dir: np.ndarray) -> bool:
     point = np.array(snake[0]) + np.array(dir)
-    return point.tolist() in snake[:-1] or\
+    return tuple(point.tolist()) in snake[:-1] or\
         point[0] == 0 or point[1] == 0 or point[0] == 19 or point[1] == 19
 
 
