@@ -154,7 +154,8 @@ class SnakeNN:
             prev_food_distance = self.get_food_distance()
 
             for _ in range(self.goal_steps):
-                action, self.game.snake.direction = generate_action(self.game.snake.body)
+                action, self.game.snake.direction =\
+                    generate_action(self.game.snake.body)
                 self.game.step()
                 _, _, done, score = self.game.get_info()
                 if done:
