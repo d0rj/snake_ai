@@ -118,7 +118,7 @@ def generate_observation(game: Game) -> np.ndarray:
 
 class SnakeNN:
     def __init__(self,
-            initial_games: int = 2000,
+            initial_games: int = 4000,
             test_games: int = 100,
             goal_steps: int = 2000,
             lr: float = 1e-2,
@@ -146,13 +146,13 @@ class SnakeNN:
         y_i: {-1,0,1} (is game done and is distance lower)
         """
         training_data = []
-        for _ in range(self.initial_games):
+        for i in range(self.initial_games):
             self.game.init()
             pre_score = self.game.score
             # get features (x1, x2, x3, x4)
             prev_observation = generate_observation(self.game)
             prev_food_distance = self.get_food_distance()
-
+            print(i)
             for _ in range(self.goal_steps):
                 action, self.game.snake.direction =\
                     generate_action(self.game.snake.body)
@@ -206,7 +206,9 @@ class SnakeNN:
         model = DNN(network, tensorboard_dir='log')
         return model
 
-    def train_model(self, training_data: list, model: DNN):
+    def train_model(self):
+        training_data = self.get_training_data()
+        model = self.model()
         X = np.array([i[0] for i in training_data]).reshape(-1, 5, 1)
         y = np.array([i[1] for i in training_data]).reshape(-1, 1)
         model.fit(X, y, n_epoch=5, shuffle=True, run_id=self.filename)
@@ -216,9 +218,8 @@ class SnakeNN:
     def test_model(self):
         """Calculate average steps and score of fitted snake
         """
-        model = self.train_model(
-            training_data=self.get_training_data(), model=self.model()
-        )
+        model = self.model()
+        model.load(self.filename)
         steps_arr = []
         scores_arr = []
         for _ in range(self.test_games):
@@ -255,4 +256,5 @@ class SnakeNN:
 
 
 if __name__ == "__main__":
-    SnakeNN().test_model()
+    SnakeNN().train_model()
+
