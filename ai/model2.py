@@ -5,7 +5,8 @@ from nn2 import SnakeNN, add_action, get_game_action, generate_observation
 
 
 snake_nn = SnakeNN()
-model = snake_nn.train_model(snake_nn.get_training_data(), snake_nn.model())    
+model = snake_nn.model()
+model.load(snake_nn.filename)    
 
 
 def snake_ai(game: Game) -> Direction:
