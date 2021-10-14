@@ -1,2 +1,2 @@
-model_checkpoint_path: "D:\\Projects\\Python\\snake_ai\\models\\fanaev.tflearn"
-all_model_checkpoint_paths: "D:\\Projects\\Python\\snake_ai\\models\\fanaev.tflearn"
+model_checkpoint_path: "/Users/fanaev/Desktop/github/snake_ai/models/fanaev.tflearn"
+all_model_checkpoint_paths: "/Users/fanaev/Desktop/github/snake_ai/models/fanaev.tflearn"
