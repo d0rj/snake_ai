@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 from sys import exit
 from typing import Callable
+from importlib import import_module
 
 from sessions.quiet_session import session
 from sessions.windowed_session import session as ui_session
@@ -8,7 +9,7 @@ from sessions.windowed_session import session as ui_session
 
 def import_function(module_name: str, function_name: str) -> Callable:
     try:
-        module = __import__(module_name, fromlist=[function_name])
+        module = import_module(module_name, package=None)
         function = getattr(module, function_name)
         return function
     except ModuleNotFoundError:
