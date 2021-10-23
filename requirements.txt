@@ -1,0 +1,4 @@
+tensorflow >= 2.5
+pygame >= 2.0
+tflearn >= 0.5.0
+keras >= 2.4
